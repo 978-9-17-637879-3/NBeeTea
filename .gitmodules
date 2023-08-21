@@ -1,0 +1,4 @@
+[submodule "include/gzip-hpp"]
+	path = include/gzip-hpp
+	url = https://github.com/mapbox/gzip-hpp.git
+
