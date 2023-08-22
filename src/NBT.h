@@ -41,7 +41,7 @@ public:
         listChildren.push_back(childNBT);
     }
 
-    void addCompoundElement(const std::string &childName, NBT &childNBT) {
+    void addCompoundElement(const std::string &childName, NBT childNBT) {
         assert(this->tagID == TAG_Compound);
 
         if (!childNBT.name.has_value())
