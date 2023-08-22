@@ -35,8 +35,6 @@ public:
 
     explicit NBT(char tagID);
 
-    NBT(char tagID, const std::string &name);
-
     void addListChild(const NBT &childNBT) {
         assert(this->tagID == TAG_List);
 
@@ -94,6 +92,18 @@ public:
     void writeVal(const std::vector<int> &intVector);
 
     void writeVal(const std::vector<long> &longVector);
+
+    NBT(char tagID, const char &byte);
+    NBT(char tagID, const signed short &val);
+    NBT(char tagID, const signed int &val);
+    NBT(char tagID, const signed long &val);
+    NBT(char tagID, const float &val);
+    NBT(char tagID, const double &val);
+    NBT(char tagID, const std::vector<char> &byteVector);
+    NBT(char tagID, const std::string &str);
+    NBT(char tagID, const std::vector<int> &intVector);
+    NBT(char tagID, const std::vector<long> &longVector);
+
 
     void print(unsigned long depth = 0);
 

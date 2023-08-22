@@ -8,11 +8,6 @@ NBT::NBT(char tagID) {
     this->tagID = tagID;
 }
 
-NBT::NBT(char tagID, const std::string &name) {
-    this->tagID = tagID;
-    this->name = name;
-}
-
 char NBT::getByte() {
     assert(tagID == TAG_Byte);
 
@@ -285,6 +280,46 @@ void NBT::writeVal(const std::vector<long> &longVector) {
     }
 }
 
+NBT::NBT(char tagID, const char &byte) : NBT(tagID) {
+    this->writeVal(byte);
+}
+
+NBT::NBT(char tagID, const short &val) : NBT(tagID) {
+    this->writeVal(val);
+}
+
+NBT::NBT(char tagID, const int &val) : NBT(tagID) {
+    this->writeVal(val);
+}
+
+NBT::NBT(char tagID, const long &val) : NBT(tagID) {
+    this->writeVal(val);
+}
+
+NBT::NBT(char tagID, const float &val) : NBT(tagID) {
+    this->writeVal(val);
+}
+
+NBT::NBT(char tagID, const double &val) : NBT(tagID) {
+    this->writeVal(val);
+}
+
+NBT::NBT(char tagID, const std::vector<char> &byteVector) : NBT(tagID) {
+    this->writeVal(byteVector);
+}
+
+NBT::NBT(char tagID, const std::string &str) : NBT(tagID) {
+    this->writeVal(str);
+}
+
+NBT::NBT(char tagID, const std::vector<int> &intVector) : NBT(tagID) {
+    this->writeVal(intVector);
+}
+
+NBT::NBT(char tagID, const std::vector<long> &longVector) : NBT(tagID) {
+    this->writeVal(longVector);
+}
+
 union UnsignedShortBytesUnion {
     char bytes[SHORT_BYTES];
     unsigned short value;
@@ -386,11 +421,11 @@ void deserializeTagCompound(NBT *const parentPtr, const char *byteArray, unsigne
         char tagID = deserializeTagID(byteArray, offset);
         std::string name = deserializeString(byteArray, offset);
 
-        NBT childNBT = NBT(tagID, name);
+        NBT childNBT = NBT(tagID);
 
         deserializeValue(childNBT, byteArray, offset);
 
-        parentPtr->addCompoundElement(childNBT.name.value(), childNBT);
+        parentPtr->addCompoundElement(name, childNBT);
     }
     offset++;
 }
@@ -412,7 +447,8 @@ NBT NBT::deserialize(const char *byteArray, const unsigned long byteArraySize) {
     char tagID = deserializeTagID(readableNBTCharArray, offset);
     std::string name = deserializeString(readableNBTCharArray, offset);
 
-    NBT root = NBT(tagID, name);
+    NBT root = NBT(tagID);
+    root.name = name;
 
     deserializeTagCompound(&root, readableNBTCharArray, offset);
 
