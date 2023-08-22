@@ -39,7 +39,7 @@ public:
 
     NBT(char tagID, const std::string& name);
 
-    void write(const char *byteArray, unsigned int &offset, const unsigned int size);
+    void writeBytes(const char *byteArray, unsigned int &offset, const unsigned int size);
 
     void addListChild(const NBT &childNBT) {
         assert(this->tagID == TAG_List);
@@ -71,9 +71,9 @@ public:
 
     std::vector<signed long> getLongVector();
 
-    void printTree(unsigned long depth = 0);
+    void print(unsigned long depth = 0);
 
-    static NBT readTree(const char *byteArray, unsigned long byteArraySize);
+    static NBT deserialize(const char *byteArray, unsigned long byteArraySize);
 
-    static std::vector<char> getBinary(NBT &root, bool compressed = false);
+    static std::vector<char> serialize(NBT &root, bool compressed = false);
 };
