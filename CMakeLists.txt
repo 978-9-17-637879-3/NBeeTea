@@ -3,7 +3,7 @@ project(NBeeTea)
 
 set(CMAKE_CXX_STANDARD 17)
 
-add_executable(src/NBT.cpp)
+add_library(NBeeTea src/NBT.cpp)
 
 find_package(ZLIB)
 target_link_libraries(NBeeTea PRIVATE ZLIB::ZLIB)
