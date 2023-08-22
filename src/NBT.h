@@ -33,8 +33,6 @@ public:
 
     std::vector<char> valueBytes{}; // empty if TAG_List or TAG_Compound
 
-    unsigned int uncompressedBinarySize{};
-
     explicit NBT(char tagID);
 
     NBT(char tagID, const std::string& name);

@@ -416,8 +416,6 @@ NBT NBT::deserialize(const char *byteArray, const unsigned long byteArraySize) {
 
     deserializeTagCompound(&root, readableNBTCharArray, offset);
 
-    root.uncompressedBinarySize = offset;
-
     return root;
 }
 
@@ -531,94 +529,90 @@ void NBT::print(unsigned long depth) {
     std::cout << std::endl;
 }
 
-void serializeByte(const char &byte, char *byteArray, unsigned int &offset) {
-    byteArray[offset++] = byte;
+void serializeByte(const char &byte, std::vector<char> &serializedBytesVector) {
+    serializedBytesVector.push_back(byte);
 }
 
-void serializeInt(const signed int &n, char *byteArray, unsigned int &offset) {
+void serializeInt(const signed int &n, std::vector<char> &serializedBytesVector) {
     SignedIntBytesUnion intBytes;
     intBytes.value = n;
     for (int i = INT_BYTES - 1; i >= 0; i--) {
-        serializeByte(intBytes.bytes[i], byteArray, offset);
+        serializeByte(intBytes.bytes[i], serializedBytesVector);
     }
 }
 
-void serializeByteVector(const std::vector<char> &byteVector, char *byteArray, unsigned int &offset) {
+void serializeByteVector(const std::vector<char> &byteVector, std::vector<char> &serializedBytesVector) {
     for (const char &byte: byteVector) {
-        serializeByte(byte, byteArray, offset);
+        serializeByte(byte, serializedBytesVector);
     }
 }
 
-void serializeByteVectorIncludingLength(const std::vector<char> &byteArrayToWrite, char *byteArray, unsigned int &offset) {
+void serializeByteVectorIncludingLength(const std::vector<char> &byteArrayToWrite, std::vector<char> &serializedBytesVector) {
     SignedIntBytesUnion countBytes;
     countBytes.value = byteArrayToWrite.size();
     for (int i = INT_BYTES - 1; i >= 0; i--) {
-        serializeByte(countBytes.bytes[i], byteArray, offset);
+        serializeByte(countBytes.bytes[i], serializedBytesVector);
     }
 
-    serializeByteVector(byteArrayToWrite, byteArray, offset);
+    serializeByteVector(byteArrayToWrite, serializedBytesVector);
 }
 
-void serializeCString(char *cString, unsigned short cStringLength, char *byteArray, unsigned int &offset) {
+void serializeCString(char *cString, unsigned short cStringLength, std::vector<char> &serializedBytesVector) {
     UnsignedShortBytesUnion lengthBytesUnion;
     lengthBytesUnion.value = cStringLength;
     for (int i = SHORT_BYTES - 1; i >= 0; i--) {
-        serializeByte(lengthBytesUnion.bytes[i], byteArray, offset);
+        serializeByte(lengthBytesUnion.bytes[i], serializedBytesVector);
     }
 
     for (int i = 0; i < cStringLength; i++) {
-        serializeByte(*(cString + i), byteArray, offset);
+        serializeByte(*(cString + i), serializedBytesVector);
     }
 }
 
-void serializeValue(NBT &nbt, char *byteArray, unsigned int &offset) {
+void serializeValue(NBT &nbt, std::vector<char> &serializedBytesVector) {
     if (nbt.tagID == TAG_Compound) {
         for (std::pair<std::string, NBT> element: nbt.compoundElements) {
-            serializeByte(element.second.tagID, byteArray, offset);
-            serializeCString(element.second.name.value().data(), element.second.name.value().size(), byteArray, offset);
+            serializeByte(element.second.tagID, serializedBytesVector);
+            serializeCString(element.second.name.value().data(), element.second.name.value().size(), serializedBytesVector);
 
             // serialize value
-            serializeValue(element.second, byteArray, offset);
+            serializeValue(element.second, serializedBytesVector);
         }
 
-        serializeByte(TAG_End, byteArray, offset);
+        serializeByte(TAG_End, serializedBytesVector);
     } else if (nbt.tagID == TAG_List) {
-        serializeByte(nbt.listType, byteArray, offset);
-        serializeInt(nbt.childrenCount, byteArray, offset);
+        serializeByte(nbt.listType, serializedBytesVector);
+        serializeInt(nbt.childrenCount, serializedBytesVector);
 
         for (NBT child: nbt.listChildren) {
-            serializeValue(child, byteArray, offset);
+            serializeValue(child, serializedBytesVector);
         }
     } else if (TAG_BYTE_COUNT_MAP.count(nbt.tagID) > 0) {
         for (const char &byte: nbt.valueBytes) {
-            serializeByte(byte, byteArray, offset);
+            serializeByte(byte, serializedBytesVector);
         }
     } else if (nbt.tagID == TAG_String) {
-        serializeCString(nbt.valueBytes.data(), nbt.valueBytes.size(), byteArray, offset);
+        serializeCString(nbt.valueBytes.data(), nbt.valueBytes.size(), serializedBytesVector);
     } else if (nbt.tagID == TAG_Byte_Array || nbt.tagID == TAG_Int_Array || nbt.tagID == TAG_Long_Array) {
-        serializeByteVectorIncludingLength(nbt.valueBytes, byteArray, offset);
+        serializeByteVectorIncludingLength(nbt.valueBytes, serializedBytesVector);
     }
 }
 
 std::vector<char> NBT::serialize(NBT &root, bool compressed) {
-    assert(root.uncompressedBinarySize > 0);
     assert(root.tagID == TAG_Compound);
 
-    unsigned int offset = 0;
+    std::vector<char> serializedBytesVector;
 
-    std::vector<char> binary;
-    binary.resize(root.uncompressedBinarySize);
+    serializeByte(root.tagID, serializedBytesVector);
+    serializeCString(root.name.value().data(), root.name.value().size(), serializedBytesVector);
 
-    serializeByte(root.tagID, binary.data(), offset);
-    serializeCString(root.name.value().data(), root.name.value().size(), binary.data(), offset);
-
-    serializeValue(root, binary.data(), offset);
+    serializeValue(root, serializedBytesVector);
 
     if (compressed) {
-        std::string compressedBinary = gzip::compress(binary.data(), binary.size());
+        std::string compressedBinary = gzip::compress(serializedBytesVector.data(), serializedBytesVector.size());
 
         return std::vector<char>(compressedBinary.begin(), compressedBinary.end());
     }
 
-    return binary;
+    return serializedBytesVector;
 }
