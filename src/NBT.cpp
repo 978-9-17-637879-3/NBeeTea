@@ -1,3 +1,4 @@
+#include <iostream>
 #include "NBT.h"
 
 void NBT::write(const char *byteArray, unsigned int &offset, const unsigned int size) {
@@ -5,7 +6,7 @@ void NBT::write(const char *byteArray, unsigned int &offset, const unsigned int 
     offset += size;
 }
 
-char NBT::getChar() {
+char NBT::getByte() {
     return valueBytes.front();
 }
 
@@ -94,7 +95,7 @@ double NBT::getDouble() {
     return doubleBytes.value;
 }
 
-std::vector<char> NBT::getBytes() {
+std::vector<char> NBT::getByteVector() {
     return valueBytes;
 }
 
@@ -259,4 +260,114 @@ NBT readTree(const char *byteArray) {
     readTagCompound(&root, byteArray, offset);
 
     return root;
+}
+
+std::unordered_map<char, std::string> TAG_ID_TO_STRING_MAP{{TAG_Byte,       "TAG_Byte"},
+                                                           {TAG_Short,      "TAG_Short"},
+                                                           {TAG_Int,        "TAG_Int"},
+                                                           {TAG_Long,       "TAG_Long"},
+                                                           {TAG_Float,      "TAG_Float"},
+                                                           {TAG_Double,     "TAG_Double"},
+                                                           {TAG_Byte_Array, "TAG_Byte_Array"},
+                                                           {TAG_String,     "TAG_String"},
+                                                           {TAG_List,       "TAG_List"},
+                                                           {TAG_Compound,   "TAG_Compound"},
+                                                           {TAG_Int_Array,  "TAG_Int_Array"},
+                                                           {TAG_Long_Array, "TAG_Long_Array"}};
+
+const std::string TAB_STRING = "    ";
+
+void NBT::printTree(unsigned long depth) {
+    for (int i = 0; i < depth; i++) {
+        std::cout << TAB_STRING;
+    }
+
+    std::cout << TAG_ID_TO_STRING_MAP[tagID];
+
+    if (name.has_value())
+        std::cout << " \"" + name.value() + "\"";
+
+    unsigned long subChildrenCount = std::max(listChildren.size(), compoundElements.size());
+    if (subChildrenCount > 0) {
+        std::cout << " [" + std::to_string(subChildrenCount) + "]" + " {";
+        std::cout << std::endl;
+        for (NBT child: listChildren) {
+            child.printTree(depth + 1);
+        }
+        for (std::pair<std::string, NBT> element: compoundElements) {
+            element.second.printTree(depth + 1);
+        }
+
+        for (int i = 0; i < depth; i++) {
+            std::cout << TAB_STRING;
+        }
+        std::cout << "}";
+    } else {
+        std::cout << ": ";
+
+        switch (tagID) {
+            case TAG_Byte: {
+                std::cout << std::to_string(getByte());
+                break;
+            }
+            case TAG_Short: {
+                std::cout << std::to_string(getShort());
+                break;
+            }
+            case TAG_Int: {
+                std::cout << std::to_string(getInt());
+                break;
+            }
+            case TAG_Long: {
+                std::cout << std::to_string(getLong());
+                break;
+            }
+            case TAG_Float: {
+                std::cout << std::to_string(getFloat());
+                break;
+            }
+            case TAG_Double: {
+                std::cout << std::to_string(getDouble());
+                break;
+            }
+            case TAG_Byte_Array: {
+                std::string joinedArray = "[" + std::to_string(getByteVector().front());
+                for (unsigned long i = 1; i < getByteVector().size() - 1; i++) {
+                    joinedArray += std::to_string(getByteVector()[i]) + ", ";
+                }
+                joinedArray += std::to_string(getByteVector().back()) + "]";
+                std::cout << joinedArray;
+                break;
+            }
+            case TAG_String: {
+                std::cout << getString();
+                break;
+            }
+            case TAG_Int_Array: {
+                std::string joinedArray = "[" + std::to_string(getIntVector().front());
+                for (unsigned long i = 1; i < getIntVector().size() - 1; i++) {
+                    joinedArray += std::to_string(getIntVector()[i]) + ", ";
+                }
+                joinedArray += std::to_string(getIntVector().back()) + "]";
+                std::cout << joinedArray;
+                break;
+            }
+            case TAG_Long_Array: {
+                std::string joinedArray = "[" + std::to_string(getLongVector().front());
+                for (unsigned long i = 1; i < getLongVector().size() - 1; i++) {
+                    joinedArray += std::to_string(getLongVector()[i]) + ", ";
+                }
+                joinedArray += std::to_string(getLongVector().back()) + "]";
+                std::cout << joinedArray;
+                break;
+            }
+            default: {
+                std::cout << "UNSUPPORTED TAG ID " << std::to_string(tagID);
+                break;
+            }
+        }
+    }
+
+
+    std::cout << std::endl;
 }

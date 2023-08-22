@@ -47,7 +47,7 @@ public:
         compoundElements[childName] = childNBT;
     }
 
-    char getChar();
+    char getByte();
 
     signed short getShort();
 
@@ -59,13 +59,15 @@ public:
 
     double getDouble();
 
-    std::vector<char> getBytes();
+    std::vector<char> getByteVector();
 
     std::string getString();
 
     std::vector<signed int> getIntVector();
 
     std::vector<signed long> getLongVector();
+
+    void printTree(unsigned long depth = 0);
 };
 
 NBT readTree(const char *byteArray);
