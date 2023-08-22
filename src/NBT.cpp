@@ -130,7 +130,7 @@ std::vector<signed int> NBT::getIntVector() {
     assert(tagID == TAG_Int_Array);
 
     std::vector<signed int> intVector;
-    int finalSize = (int)(valueBytes.size() / (unsigned long)INT_BYTES);
+    int finalSize = (int) (valueBytes.size() / (unsigned long) INT_BYTES);
 
     for (int i = 0; i < finalSize; i++) {
         SignedIntBytesUnion intBytes;
@@ -149,7 +149,7 @@ std::vector<signed long> NBT::getLongVector() {
     assert(tagID == TAG_Long_Array);
 
     std::vector<signed long> longVector;
-    int finalSize = (int)(valueBytes.size() / (unsigned long)LONG_BYTES);
+    int finalSize = (int) (valueBytes.size() / (unsigned long) LONG_BYTES);
 
     for (int i = 0; i < finalSize; i++) {
         SignedLongBytesUnion longBytesUnion;
@@ -547,7 +547,8 @@ void serializeByteVector(const std::vector<char> &byteVector, std::vector<char> 
     }
 }
 
-void serializeByteVectorIncludingLength(const std::vector<char> &byteArrayToWrite, std::vector<char> &serializedBytesVector) {
+void serializeByteVectorIncludingLength(const std::vector<char> &byteArrayToWrite,
+                                        std::vector<char> &serializedBytesVector) {
     SignedIntBytesUnion countBytes;
     countBytes.value = byteArrayToWrite.size();
     for (int i = INT_BYTES - 1; i >= 0; i--) {
@@ -573,7 +574,8 @@ void serializeValue(NBT &nbt, std::vector<char> &serializedBytesVector) {
     if (nbt.tagID == TAG_Compound) {
         for (std::pair<std::string, NBT> element: nbt.compoundElements) {
             serializeByte(element.second.tagID, serializedBytesVector);
-            serializeCString(element.second.name.value().data(), element.second.name.value().size(), serializedBytesVector);
+            serializeCString(element.second.name.value().data(), element.second.name.value().size(),
+                             serializedBytesVector);
 
             // serialize value
             serializeValue(element.second, serializedBytesVector);
