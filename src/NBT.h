@@ -3,7 +3,6 @@
 #include <vector>
 #include <optional>
 #include <string>
-#include <map>
 #include <unordered_map>
 #include <cassert>
 
@@ -29,10 +28,10 @@ public:
     NBT *parentPtr;
     char tagID;
 
-    std::vector<NBT> listChildren;
-    char listType;
-    signed int listLength;
-    std::unordered_map<std::string, NBT> compoundElements;
+    std::vector<NBT> listChildren{};
+    char listType{};
+    signed int childrenCount{};
+    std::unordered_map<std::string, NBT> compoundElements{};
 
     std::optional<std::string> name;
 
@@ -45,7 +44,7 @@ public:
 
     void addCompoundElement(const std::string &childName, const NBT &childNBT) {
         assert(this->tagID == TAG_Compound);
-        compoundElements.insert(std::make_pair(childName, childNBT));
+        compoundElements[childName] = childNBT;
     }
 
     char getChar();
@@ -67,40 +66,6 @@ public:
     std::vector<signed int> getIntVector();
 
     std::vector<signed long> getLongVector();
-
-
 };
 
-NBT readTree(const char *byteArray, const unsigned long &byteArrayLength);
-
-//class NBTTree {
-//public:
-//    NBTTree *parentPtr;
-//    NBT nbt;
-//    std::vector<NBTTree> listChildren;
-//    std::unordered_map<std::string, NBTTree> compoundElements;
-//
-//    // Root of tree
-//    NBTTree(NBT nbt) {
-//        this->nbt = nbt;
-//    }
-//
-//    // Branch of tree
-//    NBTTree(NBTTree *parentPtr, NBT nbt) {
-//        this->parentPtr = parentPtr;
-//        this->nbt = nbt;
-//    }
-//
-//    void addListChild(NBT childNBT) {
-//        assert(nbt.tagID == TAG_List);
-//        NBTTree child = NBTTree(this, childNBT);
-//        listChildren.push_back(child);
-//    }
-//
-//    void addCompoundElement(std::string name, NBT childNBT) {
-//        assert(nbt.tagID == TAG_Compound);
-//        NBTTree child = NBTTree(this, childNBT);
-//        compoundElements.insert(std::make_pair(name, child));
-//    }
-//};
-
+NBT readTree(const char *byteArray);

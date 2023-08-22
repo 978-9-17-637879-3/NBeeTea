@@ -1,7 +1,5 @@
 #include "NBT.h"
 
-
-
 void NBT::write(const char *byteArray, unsigned int &offset, const unsigned int size) {
     valueBytes.insert(valueBytes.end(), byteArray + offset, byteArray + offset + size);
     offset += size;
@@ -72,7 +70,7 @@ union FloatBytesUnion {
 float NBT::getFloat() {
     FloatBytesUnion floatBytes;
 
-    for (int i = LONG_BYTES - 1; i >= 0; i--) {
+    for (int i = FLOAT_BYTES - 1; i >= 0; i--) {
         floatBytes.bytes[i] = valueBytes[FLOAT_BYTES - 1 - i];
     }
 
@@ -183,107 +181,82 @@ std::unordered_map<char, int> TAG_BYTE_COUNT_MAP{{TAG_Byte,   1},
                                                  {TAG_Float,  4},
                                                  {TAG_Double, 8}};
 
-void readValue(NBT *parentPtr, const char *byteArray, unsigned int &offset) {
-    if (parentPtr->tagID == TAG_Compound) {
-        while (byteArray[offset] != TAG_End) {
-            NBT childNBT;
+void readTagList(NBT *const parentPtr, const char *byteArray, unsigned int &offset);
 
-            childNBT.tagID = readTagIDFromBytes(byteArray, offset);
-            childNBT.name = readStringFromBytes(byteArray, offset);
+void readTagCompound(NBT *const parentPtr, const char *byteArray, unsigned int &offset);
 
-            if (TAG_BYTE_COUNT_MAP.count(childNBT.tagID) > 0) {
-                childNBT.write(byteArray, offset, TAG_BYTE_COUNT_MAP[childNBT.tagID]);
-            } else if (childNBT.tagID == TAG_List) {
-                char listType = readTagIDFromBytes(byteArray, offset);
+void readValue(NBT &childNBT, const char *byteArray, unsigned int &offset) {
+    if (TAG_BYTE_COUNT_MAP.count(childNBT.tagID) > 0) {
+        childNBT.write(byteArray, offset, TAG_BYTE_COUNT_MAP[childNBT.tagID]);
+    } else if (childNBT.tagID == TAG_List) {
+        char listType = readTagIDFromBytes(byteArray, offset);
 
-                childNBT.listType = listType;
-                childNBT.listLength = readSignedIntFromBytes(byteArray, offset);
+        childNBT.listType = listType;
+        childNBT.childrenCount = readSignedIntFromBytes(byteArray, offset);
 
-                if (childNBT.listLength > 0) {
-                    readValue(&childNBT, byteArray, offset);
-                }
-            } else if (childNBT.tagID == TAG_Compound) {
-                readValue(&childNBT, byteArray, offset);
-            } else if (childNBT.tagID == TAG_String) {
-                UnsignedShortBytesUnion stringLength;
-
-                for (int i = SHORT_BYTES - 1; i >= 0; i--) {
-                    stringLength.bytes[i] = byteArray[offset + (SHORT_BYTES - 1 - i)];
-                }
-                offset += SHORT_BYTES;
-
-                childNBT.write(byteArray, offset, stringLength.value);
-            } else if (childNBT.tagID == TAG_Byte_Array) {
-                signed int count = readSignedIntFromBytes(byteArray, offset);
-                childNBT.write(byteArray, offset, INT_BYTES + (count));
-            } else if (childNBT.tagID == TAG_Int_Array) {
-                signed int count = readSignedIntFromBytes(byteArray, offset);
-                childNBT.write(byteArray, offset, INT_BYTES + (INT_BYTES * count));
-            } else if (childNBT.tagID == TAG_Long_Array) {
-                signed int count = readSignedIntFromBytes(byteArray, offset);
-                childNBT.write(byteArray, offset, INT_BYTES + (LONG_BYTES * count));
-            }
-
-            parentPtr->addCompoundElement(childNBT.name.value(), childNBT);
+        if (childNBT.childrenCount > 0) {
+            readTagList(&childNBT, byteArray, offset);
         }
-        offset++;
-    } else if (parentPtr->tagID == TAG_List) {
-        int childrenCount = parentPtr->listLength/TAG_BYTE_COUNT_MAP[parentPtr->listType];
-        for (int c = 0; c < childrenCount; c++) {
-            NBT childNBT;
+    } else if (childNBT.tagID == TAG_Compound) {
+        readTagCompound(&childNBT, byteArray, offset);
+    } else if (childNBT.tagID == TAG_String) {
+        UnsignedShortBytesUnion stringLength;
 
-            childNBT.tagID = parentPtr->listType;
-
-            if (TAG_BYTE_COUNT_MAP.count(childNBT.tagID) > 0) {
-                childNBT.write(byteArray, offset, TAG_BYTE_COUNT_MAP[childNBT.tagID]);
-            } else if (childNBT.tagID == TAG_List) {
-                char listType = readTagIDFromBytes(byteArray, offset);
-
-                childNBT.listType = listType;
-                childNBT.listLength = readSignedIntFromBytes(byteArray, offset);
-
-                if (childNBT.listLength > 0) {
-                    readValue(&childNBT, byteArray, offset);
-                }
-            } else if (childNBT.tagID == TAG_Compound) {
-                readValue(&childNBT, byteArray, offset);
-            } else if (childNBT.tagID == TAG_String) {
-                UnsignedShortBytesUnion stringLength;
-
-                for (int i = SHORT_BYTES - 1; i >= 0; i--) {
-                    stringLength.bytes[i] = byteArray[offset + (SHORT_BYTES - 1 - i)];
-                }
-                offset += SHORT_BYTES;
-
-                childNBT.write(byteArray, offset, stringLength.value);
-            } else if (childNBT.tagID == TAG_Byte_Array) {
-                signed int count = readSignedIntFromBytes(byteArray, offset);
-                childNBT.write(byteArray, offset, INT_BYTES + (count));
-            } else if (childNBT.tagID == TAG_Int_Array) {
-                signed int count = readSignedIntFromBytes(byteArray, offset);
-                childNBT.write(byteArray, offset, INT_BYTES + (INT_BYTES * count));
-            } else if (childNBT.tagID == TAG_Long_Array) {
-                signed int count = readSignedIntFromBytes(byteArray, offset);
-                childNBT.write(byteArray, offset, INT_BYTES + (LONG_BYTES * count));
-            }
-
-            parentPtr->addCompoundElement(childNBT.name.value(), childNBT);
+        for (int i = SHORT_BYTES - 1; i >= 0; i--) {
+            stringLength.bytes[i] = byteArray[offset + (SHORT_BYTES - 1 - i)];
         }
+        offset += SHORT_BYTES;
+
+        childNBT.write(byteArray, offset, stringLength.value);
+    } else if (childNBT.tagID == TAG_Byte_Array) {
+        signed int count = readSignedIntFromBytes(byteArray, offset);
+        childNBT.write(byteArray, offset, count);
+    } else if (childNBT.tagID == TAG_Int_Array) {
+        signed int count = readSignedIntFromBytes(byteArray, offset);
+        childNBT.write(byteArray, offset, INT_BYTES * count);
+    } else if (childNBT.tagID == TAG_Long_Array) {
+        signed int count = readSignedIntFromBytes(byteArray, offset);
+        childNBT.write(byteArray, offset, LONG_BYTES * count);
     }
 }
 
-NBT readTree(const char *byteArray, const unsigned long &byteArrayLength) {
+void readTagList(NBT *const parentPtr, const char *byteArray, unsigned int &offset) {
+    assert(parentPtr->tagID == TAG_List);
+    for (int c = 0; c < parentPtr->childrenCount; c++) {
+        NBT childNBT;
+
+        childNBT.tagID = parentPtr->listType;
+
+        readValue(childNBT, byteArray, offset);
+
+        parentPtr->addListChild(childNBT);
+    }
+}
+
+void readTagCompound(NBT *const parentPtr, const char *byteArray, unsigned int &offset) {
+    while (byteArray[offset] != TAG_End) {
+        NBT childNBT;
+
+        childNBT.tagID = readTagIDFromBytes(byteArray, offset);
+        childNBT.name = readStringFromBytes(byteArray, offset);
+
+        readValue(childNBT, byteArray, offset);
+
+        parentPtr->addCompoundElement(childNBT.name.value(), childNBT);
+    }
+    offset++;
+}
+
+NBT readTree(const char *byteArray) {
     assert(byteArray[0] == TAG_Compound);
 
     unsigned int offset = 0;
 
-    NBT root = NBT();
+    NBT root;
     root.tagID = readTagIDFromBytes(byteArray, offset);
     root.name = readStringFromBytes(byteArray, offset);
 
-    while (offset < byteArrayLength) {
-        readValue(&root, byteArray, offset);
-    }
+    readTagCompound(&root, byteArray, offset);
 
     return root;
 }
