@@ -35,6 +35,10 @@ public:
 
     unsigned int uncompressedBinarySize{};
 
+    explicit NBT(char tagID);
+
+    NBT(char tagID, const std::string& name);
+
     void write(const char *byteArray, unsigned int &offset, const unsigned int size);
 
     void addListChild(const NBT &childNBT) {
@@ -44,7 +48,7 @@ public:
 
     void addCompoundElement(const std::string &childName, const NBT &childNBT) {
         assert(this->tagID == TAG_Compound);
-        compoundElements[childName] = childNBT;
+        compoundElements.insert(std::make_pair(childName, childNBT)); // can't use [] operator cuz NBT has no implicit constructor (i think)
     }
 
     char getByte();

@@ -4,6 +4,15 @@
 #include "gzip/decompress.hpp"
 #include "gzip/compress.hpp"
 
+NBT::NBT(char tagID) {
+    this->tagID = tagID;
+}
+
+NBT::NBT(char tagID, const std::string &name) {
+    this->tagID = tagID;
+    this->name = name;
+}
+
 void NBT::write(const char *byteArray, unsigned int &offset, const unsigned int size) {
     valueBytes.insert(valueBytes.end(), byteArray + offset, byteArray + offset + size);
     offset += size;
@@ -227,9 +236,7 @@ void readValue(NBT &childNBT, const char *byteArray, unsigned int &offset) {
 void readTagList(NBT *const parentPtr, const char *byteArray, unsigned int &offset) {
     assert(parentPtr->tagID == TAG_List);
     for (int c = 0; c < parentPtr->childrenCount; c++) {
-        NBT childNBT;
-
-        childNBT.tagID = parentPtr->listType;
+        NBT childNBT = NBT(parentPtr->listType);
 
         readValue(childNBT, byteArray, offset);
 
@@ -240,10 +247,10 @@ void readTagList(NBT *const parentPtr, const char *byteArray, unsigned int &offs
 void readTagCompound(NBT *const parentPtr, const char *byteArray, unsigned int &offset) {
     assert(parentPtr->tagID == TAG_Compound);
     while (byteArray[offset] != TAG_End) {
-        NBT childNBT;
+        char tagID = readTagIDFromBytes(byteArray, offset);
+        std::string name = readStringFromBytes(byteArray, offset);
 
-        childNBT.tagID = readTagIDFromBytes(byteArray, offset);
-        childNBT.name = readStringFromBytes(byteArray, offset);
+        NBT childNBT = NBT(tagID, name);
 
         readValue(childNBT, byteArray, offset);
 
@@ -266,9 +273,10 @@ NBT NBT::readTree(const char *byteArray, const unsigned long byteArraySize) {
 
     unsigned int offset = 0;
 
-    NBT root;
-    root.tagID = readTagIDFromBytes(readableNBTCharArray, offset);
-    root.name = readStringFromBytes(readableNBTCharArray, offset);
+    char tagID = readTagIDFromBytes(readableNBTCharArray, offset);
+    std::string name = readStringFromBytes(readableNBTCharArray, offset);
+
+    NBT root = NBT(tagID, name);
 
     readTagCompound(&root, readableNBTCharArray, offset);
 
