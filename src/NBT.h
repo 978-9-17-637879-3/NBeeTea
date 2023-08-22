@@ -21,11 +21,7 @@ const char TAG_Int_Array = 0x0B;
 const char TAG_Long_Array = 0x0C;
 
 class NBT {
-private:
-    std::vector<char> valueBytes{}; // empty if TAG_List or TAG_Compound
-
 public:
-    NBT *parentPtr;
     char tagID;
 
     std::vector<NBT> listChildren{};
@@ -34,6 +30,10 @@ public:
     std::unordered_map<std::string, NBT> compoundElements{};
 
     std::optional<std::string> name;
+
+    std::vector<char> valueBytes{}; // empty if TAG_List or TAG_Compound
+
+    unsigned int uncompressedBinarySize{};
 
     void write(const char *byteArray, unsigned int &offset, const unsigned int size);
 
@@ -68,6 +68,8 @@ public:
     std::vector<signed long> getLongVector();
 
     void printTree(unsigned long depth = 0);
-};
 
-NBT readTree(const char *byteArray);
+    static NBT readTree(const char *byteArray, unsigned long byteArraySize);
+
+    static std::vector<char> getBinary(NBT &root, bool compressed = false);
+};

@@ -1,5 +1,8 @@
 #include <iostream>
 #include "NBT.h"
+#include "gzip/utils.hpp"
+#include "gzip/decompress.hpp"
+#include "gzip/compress.hpp"
 
 void NBT::write(const char *byteArray, unsigned int &offset, const unsigned int size) {
     valueBytes.insert(valueBytes.end(), byteArray + offset, byteArray + offset + size);
@@ -235,6 +238,7 @@ void readTagList(NBT *const parentPtr, const char *byteArray, unsigned int &offs
 }
 
 void readTagCompound(NBT *const parentPtr, const char *byteArray, unsigned int &offset) {
+    assert(parentPtr->tagID == TAG_Compound);
     while (byteArray[offset] != TAG_End) {
         NBT childNBT;
 
@@ -248,16 +252,27 @@ void readTagCompound(NBT *const parentPtr, const char *byteArray, unsigned int &
     offset++;
 }
 
-NBT readTree(const char *byteArray) {
-    assert(byteArray[0] == TAG_Compound);
+NBT NBT::readTree(const char *byteArray, const unsigned long byteArraySize) {
+    std::string readableNBT;
+    if (gzip::is_compressed(byteArray, byteArraySize)) {
+        readableNBT = gzip::decompress(byteArray, byteArraySize);
+    } else {
+        readableNBT = std::string(byteArray, byteArray + byteArraySize);
+    }
+
+    const char *readableNBTCharArray = readableNBT.data();
+
+    assert(readableNBTCharArray[0] == TAG_Compound);
 
     unsigned int offset = 0;
 
     NBT root;
-    root.tagID = readTagIDFromBytes(byteArray, offset);
-    root.name = readStringFromBytes(byteArray, offset);
+    root.tagID = readTagIDFromBytes(readableNBTCharArray, offset);
+    root.name = readStringFromBytes(readableNBTCharArray, offset);
 
-    readTagCompound(&root, byteArray, offset);
+    readTagCompound(&root, readableNBTCharArray, offset);
+
+    root.uncompressedBinarySize = offset;
 
     return root;
 }
@@ -370,4 +385,96 @@ void NBT::printTree(unsigned long depth) {
 
 
     std::cout << std::endl;
+}
+
+void writeByte(const char &byte, char *byteArray, unsigned int &offset) {
+    byteArray[offset++] = byte;
+}
+
+void writeInt(const signed int &n, char *byteArray, unsigned int &offset) {
+    SignedIntBytesUnion intBytes;
+    intBytes.value = n;
+    for (int i = INT_BYTES - 1; i >= 0; i--) {
+        writeByte(intBytes.bytes[i], byteArray, offset);
+    }
+}
+
+void writeByteVector(const std::vector<char> &byteVector, char *byteArray, unsigned int &offset) {
+    for (const char &byte: byteVector) {
+        writeByte(byte, byteArray, offset);
+    }
+}
+
+void writeByteVectorIncludingLength(const std::vector<char> &byteArrayToWrite, char *byteArray, unsigned int &offset) {
+    SignedIntBytesUnion countBytes;
+    countBytes.value = byteArrayToWrite.size();
+    for (int i = INT_BYTES - 1; i >= 0; i--) {
+        writeByte(countBytes.bytes[i], byteArray, offset);
+    }
+
+    writeByteVector(byteArrayToWrite, byteArray, offset);
+}
+
+void writeCString(char *cString, unsigned short cStringLength, char *byteArray, unsigned int &offset) {
+    UnsignedShortBytesUnion lengthBytesUnion;
+    lengthBytesUnion.value = cStringLength;
+    for (int i = SHORT_BYTES - 1; i >= 0; i--) {
+        writeByte(lengthBytesUnion.bytes[i], byteArray, offset);
+    }
+
+    for (int i = 0; i < cStringLength; i++) {
+        writeByte(*(cString + i), byteArray, offset);
+    }
+}
+
+void writeValue(NBT &nbt, char *byteArray, unsigned int &offset) {
+    if (nbt.tagID == TAG_Compound) {
+        for (std::pair<std::string, NBT> element: nbt.compoundElements) {
+            writeByte(element.second.tagID, byteArray, offset);
+            writeCString(element.second.name.value().data(), element.second.name.value().size(), byteArray, offset);
+
+            //write value
+            writeValue(element.second, byteArray, offset);
+        }
+
+        writeByte(TAG_End, byteArray, offset);
+    } else if (nbt.tagID == TAG_List) {
+        writeByte(nbt.listType, byteArray, offset);
+        writeInt(nbt.childrenCount, byteArray, offset);
+
+        for (NBT child: nbt.listChildren) {
+            writeValue(child, byteArray, offset);
+        }
+    } else if (TAG_BYTE_COUNT_MAP.count(nbt.tagID) > 0) {
+        for (const char &byte: nbt.valueBytes) {
+            writeByte(byte, byteArray, offset);
+        }
+    } else if (nbt.tagID == TAG_String) {
+        writeCString(nbt.valueBytes.data(), nbt.valueBytes.size(), byteArray, offset);
+    } else if (nbt.tagID == TAG_Byte_Array || nbt.tagID == TAG_Int_Array || nbt.tagID == TAG_Long_Array) {
+        writeByteVectorIncludingLength(nbt.valueBytes, byteArray, offset);
+    }
+}
+
+std::vector<char> NBT::getBinary(NBT &root, bool compressed) {
+    assert(root.uncompressedBinarySize > 0);
+    assert(root.tagID == TAG_Compound);
+
+    unsigned int offset = 0;
+
+    std::vector<char> binary;
+    binary.resize(root.uncompressedBinarySize);
+
+    writeByte(root.tagID, binary.data(), offset);
+    writeCString(root.name.value().data(), root.name.value().size(), binary.data(), offset);
+
+    writeValue(root, binary.data(), offset);
+
+    if (compressed) {
+        std::string compressedBinary = gzip::compress(binary.data(), binary.size());
+
+        return std::vector<char>(compressedBinary.begin(), compressedBinary.end());
+    }
+
+    return binary;
 }

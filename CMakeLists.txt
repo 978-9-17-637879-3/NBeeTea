@@ -5,7 +5,7 @@ set(CMAKE_CXX_STANDARD 17)
 
 add_executable(NBeeTea src/main.cpp
         src/NBT.cpp
-        src/tree.hpp)
+)
 
 find_package(ZLIB)
 target_link_libraries(NBeeTea PRIVATE ZLIB::ZLIB)
