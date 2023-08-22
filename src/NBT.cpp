@@ -13,12 +13,9 @@ NBT::NBT(char tagID, const std::string &name) {
     this->name = name;
 }
 
-void NBT::writeBytes(const char *byteArray, unsigned int &offset, const unsigned int size) {
-    valueBytes.insert(valueBytes.end(), byteArray + offset, byteArray + offset + size);
-    offset += size;
-}
-
 char NBT::getByte() {
+    assert(tagID == TAG_Byte);
+
     return valueBytes.front();
 }
 
@@ -30,6 +27,8 @@ union SignedShortBytesUnion {
 };
 
 signed short NBT::getShort() {
+    assert(tagID == TAG_Short);
+
     SignedShortBytesUnion shortBytes;
 
     for (int i = SHORT_BYTES - 1; i >= 0; i--) {
@@ -47,6 +46,8 @@ union SignedIntBytesUnion {
 };
 
 signed int NBT::getInt() {
+    assert(tagID == TAG_Int);
+
     SignedIntBytesUnion intBytes;
 
     for (int i = INT_BYTES - 1; i >= 0; i--) {
@@ -64,6 +65,8 @@ union SignedLongBytesUnion {
 };
 
 signed long NBT::getLong() {
+    assert(tagID == TAG_Long);
+
     SignedLongBytesUnion longBytes;
 
     for (int i = LONG_BYTES - 1; i >= 0; i--) {
@@ -81,6 +84,8 @@ union FloatBytesUnion {
 };
 
 float NBT::getFloat() {
+    assert(tagID == TAG_Float);
+
     FloatBytesUnion floatBytes;
 
     for (int i = FLOAT_BYTES - 1; i >= 0; i--) {
@@ -98,6 +103,8 @@ union DoubleBytesUnion {
 };
 
 double NBT::getDouble() {
+    assert(tagID == TAG_Double);
+
     DoubleBytesUnion doubleBytes;
 
     for (int i = LONG_BYTES - 1; i >= 0; i--) {
@@ -108,22 +115,28 @@ double NBT::getDouble() {
 }
 
 std::vector<char> NBT::getByteVector() {
+    assert(tagID == TAG_Byte_Array);
+
     return valueBytes;
 }
 
 std::string NBT::getString() {
+    assert(tagID == TAG_String);
+
     return std::string(valueBytes.begin(), valueBytes.end());
 }
 
 std::vector<signed int> NBT::getIntVector() {
-    std::vector<signed int> intVector;
-    intVector.resize(valueBytes.size() / (sizeof(signed int)));
+    assert(tagID == TAG_Int_Array);
 
-    for (int i = 0; i < intVector.size(); i++) {
+    std::vector<signed int> intVector;
+    int finalSize = (int)(valueBytes.size() / (unsigned long)INT_BYTES);
+
+    for (int i = 0; i < finalSize; i++) {
         SignedIntBytesUnion intBytes;
 
         for (int j = INT_BYTES - 1; j >= 0; j--) {
-            intBytes.bytes[j] = valueBytes[INT_BYTES - 1 - j];
+            intBytes.bytes[j] = valueBytes[i * INT_BYTES + INT_BYTES - 1 - j];
         }
 
         intVector.push_back(intBytes.value);
@@ -133,20 +146,143 @@ std::vector<signed int> NBT::getIntVector() {
 }
 
 std::vector<signed long> NBT::getLongVector() {
-    std::vector<signed long> longVector;
-    longVector.resize(valueBytes.size() / (sizeof(signed long)));
+    assert(tagID == TAG_Long_Array);
 
-    for (int i = 0; i < longVector.size(); i++) {
+    std::vector<signed long> longVector;
+    int finalSize = (int)(valueBytes.size() / (unsigned long)LONG_BYTES);
+
+    for (int i = 0; i < finalSize; i++) {
         SignedLongBytesUnion longBytesUnion;
 
         for (int j = LONG_BYTES - 1; j >= 0; j--) {
-            longBytesUnion.bytes[j] = valueBytes[LONG_BYTES - 1 - j];
+            longBytesUnion.bytes[j] = valueBytes[i * LONG_BYTES + LONG_BYTES - 1 - j];
         }
 
         longVector.push_back(longBytesUnion.value);
     }
 
     return longVector;
+}
+
+void NBT::writeBytes(const char *byteArray, unsigned int &offset, const unsigned int size) {
+    valueBytes.insert(valueBytes.end(), byteArray + offset, byteArray + offset + size);
+    offset += size;
+}
+
+// TODO: Implement resizes for potential performance boost
+
+void NBT::writeVal(const char &byte) {
+    assert(tagID == TAG_Byte);
+
+//    valueBytes.resize(1);
+    valueBytes.push_back(byte);
+}
+
+void NBT::writeVal(const short &val) {
+    assert(tagID == TAG_Short);
+
+//    valueBytes.resize(SHORT_BYTES);
+
+    SignedShortBytesUnion shortBytes;
+    shortBytes.value = val;
+
+    for (int i = SHORT_BYTES - 1; i >= 0; i--) {
+        valueBytes.push_back(shortBytes.bytes[i]);
+    }
+}
+
+void NBT::writeVal(const int &val) {
+    assert(tagID == TAG_Int);
+
+//    valueBytes.resize(INT_BYTES);
+
+    SignedIntBytesUnion intBytes;
+    intBytes.value = val;
+
+    for (int i = INT_BYTES - 1; i >= 0; i--) {
+        valueBytes.push_back(intBytes.bytes[i]);
+    }
+}
+
+void NBT::writeVal(const long &val) {
+    assert(tagID == TAG_Long);
+
+//    valueBytes.resize(LONG_BYTES);
+
+    SignedLongBytesUnion longBytes;
+    longBytes.value = val;
+
+    for (int i = LONG_BYTES - 1; i >= 0; i--) {
+        valueBytes.push_back(longBytes.bytes[i]);
+    }
+}
+
+void NBT::writeVal(const float &val) {
+    assert(tagID == TAG_Float);
+
+//    valueBytes.resize(FLOAT_BYTES);
+
+    FloatBytesUnion floatBytes;
+    floatBytes.value = val;
+
+    for (int i = FLOAT_BYTES - 1; i >= 0; i--) {
+        valueBytes.push_back(floatBytes.bytes[i]);
+    }
+}
+
+void NBT::writeVal(const double &val) {
+    assert(tagID == TAG_Double);
+
+//    valueBytes.resize(DOUBLE_BYTES);
+
+    DoubleBytesUnion doubleBytesUnion;
+    doubleBytesUnion.value = val;
+
+    for (int i = DOUBLE_BYTES - 1; i >= 0; i--) {
+        valueBytes.push_back(doubleBytesUnion.bytes[i]);
+    }
+}
+
+void NBT::writeVal(const std::vector<char> &byteVector) {
+    assert(tagID == TAG_Byte_Array);
+
+    valueBytes = byteVector;
+}
+
+void NBT::writeVal(const std::string &str) {
+    assert(tagID == TAG_String);
+
+    valueBytes = std::vector<char>(str.begin(), str.end());
+}
+
+void NBT::writeVal(const std::vector<int> &intVector) {
+    assert(tagID == TAG_Int_Array);
+
+//    valueBytes.resize(valueBytes.size() * INT_BYTES);
+
+    for (const int &val: intVector) {
+        SignedIntBytesUnion intBytes;
+        intBytes.value = val;
+
+        for (int i = INT_BYTES - 1; i >= 0; i--) {
+            valueBytes.push_back(intBytes.bytes[i]);
+        }
+    }
+}
+
+void NBT::writeVal(const std::vector<long> &longVector) {
+    assert(tagID == TAG_Long_Array);
+
+//    valueBytes.resize(valueBytes.size() * LONG_BYTES);
+
+    for (const long &val: longVector) {
+        SignedLongBytesUnion longBytes;
+        longBytes.value = val;
+
+        for (int i = LONG_BYTES - 1; i >= 0; i--) {
+            valueBytes.push_back(longBytes.bytes[i]);
+        }
+    }
 }
 
 union UnsignedShortBytesUnion {

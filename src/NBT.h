@@ -39,8 +39,6 @@ public:
 
     NBT(char tagID, const std::string& name);
 
-    void writeBytes(const char *byteArray, unsigned int &offset, const unsigned int size);
-
     void addListChild(const NBT &childNBT) {
         assert(this->tagID == TAG_List);
         listChildren.push_back(childNBT);
@@ -70,6 +68,28 @@ public:
     std::vector<signed int> getIntVector();
 
     std::vector<signed long> getLongVector();
+
+    void writeBytes(const char *byteArray, unsigned int &offset, const unsigned int size);
+
+    void writeVal(const char &byte);
+
+    void writeVal(const signed short &val);
+
+    void writeVal(const signed int &val);
+
+    void writeVal(const signed long &val);
+
+    void writeVal(const float &val);
+
+    void writeVal(const double &val);
+
+    void writeVal(const std::vector<char> &byteVector);
+
+    void writeVal(const std::string &str);
+
+    void writeVal(const std::vector<int> &intVector);
+
+    void writeVal(const std::vector<long> &longVector);
 
     void print(unsigned long depth = 0);
 
