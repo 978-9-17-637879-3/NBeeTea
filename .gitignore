@@ -1,4 +1,4 @@
 .idea/
 cmake-build-debug/
 test/
-src/test.cpp
+test.cpp
