@@ -35,13 +35,16 @@ public:
 
     explicit NBT(char tagID);
 
-    void addListChild(const NBT &childNBT) {
+    // return reference to parent to allow for chaining (e.g. a.addListChild(b).addListChild(c))
+    NBT addListChild(const NBT &childNBT) {
         assert(this->tagID == TAG_List);
 
         listChildren.push_back(childNBT);
+
+        return *this;
     }
 
-    void addCompoundElement(const std::string &childName, NBT childNBT) {
+    NBT addCompoundElement(const std::string &childName, NBT childNBT) {
         assert(this->tagID == TAG_Compound);
 
         if (!childNBT.name.has_value())
@@ -49,6 +52,8 @@ public:
 
         compoundElements.insert(std::make_pair(childName,
                                                childNBT)); // can't use [] operator cuz NBT has no implicit constructor (i think)
+
+        return *this;
     }
 
     char getByte();
