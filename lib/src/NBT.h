@@ -41,8 +41,6 @@ public:
 
     NBT addCompoundChild(const std::string& childName, NBT childNBT);
 
-    std::optional<NBT> getCompoundChild(const std::string& childName) const;
-
     char getByte();
 
     signed short getShort();
