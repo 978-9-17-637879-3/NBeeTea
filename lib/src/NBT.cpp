@@ -4,6 +4,10 @@
 #include "gzip/decompress.hpp"
 #include "gzip/compress.hpp"
 
+NBT::NBT() {
+    this->tagID = -1;
+}
+
 NBT::NBT(char tagID) {
     this->tagID = tagID;
 }
@@ -17,16 +21,25 @@ NBT NBT::addListChild(const NBT &childNBT) {
     return *this;
 }
 
-NBT NBT::addCompoundElement(const std::string &childName, NBT childNBT) {
+NBT NBT::addCompoundChild(const std::string &childName, NBT childNBT) {
     assert(this->tagID == TAG_Compound);
 
     if (!childNBT.name.has_value())
         childNBT.name = childName;
 
-    compoundElements.insert(std::make_pair(childName,
-                                           childNBT)); // can't use [] operator cuz NBT has no implicit constructor (i think)
+    compoundElements[childName] = childNBT; // can't use [] operator cuz NBT has no implicit constructor (i think)
 
     return *this;
+}
+
+std::optional<NBT> NBT::getCompoundChild(const std::string &childName) {
+    std::optional<NBT> compoundChild;
+
+    if (this->compoundElements.count(childName) != 0) {
+        compoundChild = this->compoundElements[childName];
+    }
+
+    return compoundChild;
 }
 
 char NBT::getByte() {
@@ -446,7 +459,7 @@ void deserializeTagCompound(NBT *const parentPtr, const char *byteArray, unsigne
 
         deserializeValue(childNBT, byteArray, offset);
 
-        parentPtr->addCompoundElement(name, childNBT);
+        parentPtr->addCompoundChild(name, childNBT);
     }
     offset++;
 }

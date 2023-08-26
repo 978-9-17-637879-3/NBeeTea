@@ -33,11 +33,15 @@ public:
 
     std::vector<char> valueBytes{}; // empty if TAG_List or TAG_Compound
 
+    explicit NBT();
+
     explicit NBT(char tagID);
 
     NBT addListChild(const NBT &childNBT);
 
-    NBT addCompoundElement(const std::string &childName, NBT childNBT);
+    NBT addCompoundChild(const std::string& childName, NBT childNBT);
+
+    std::optional<NBT> getCompoundChild(const std::string& childName);
 
     char getByte();
 
