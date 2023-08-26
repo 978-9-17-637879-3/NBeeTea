@@ -32,7 +32,7 @@ NBT NBT::addCompoundChild(const std::string &childName, NBT childNBT) {
     return *this;
 }
 
-std::optional<NBT> NBT::getCompoundChild(const std::string &childName) {
+std::optional<NBT> NBT::getCompoundChild(const std::string &childName) const {
     std::optional<NBT> compoundChild;
 
     if (this->compoundElements.count(childName) != 0) {
