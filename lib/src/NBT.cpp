@@ -32,16 +32,6 @@ NBT NBT::addCompoundChild(const std::string &childName, NBT childNBT) {
     return *this;
 }
 
-std::optional<NBT> NBT::getCompoundChild(const std::string &childName) const {
-    std::optional<NBT> compoundChild;
-
-    if (this->compoundElements.count(childName) != 0) {
-        compoundChild = this->compoundElements[childName];
-    }
-
-    return compoundChild;
-}
-
 char NBT::getByte() {
     assert(tagID == TAG_Byte);
 
