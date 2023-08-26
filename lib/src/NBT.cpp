@@ -663,7 +663,12 @@ std::vector<char> NBT::serialize(NBT &root, bool compressed) {
     std::vector<char> serializedBytesVector;
 
     serializeByte(root.tagID, serializedBytesVector);
-    serializeCString(root.name.value().data(), root.name.value().size(), serializedBytesVector);
+    if (root.name.has_value())
+        serializeCString(root.name.value().data(), root.name.value().size(), serializedBytesVector);
+    else {
+        std::string emptyStr;
+        serializeCString(emptyStr.data(), 0, serializedBytesVector);
+    }
 
     serializeValue(root, serializedBytesVector);
 
