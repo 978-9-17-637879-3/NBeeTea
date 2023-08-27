@@ -504,13 +504,16 @@ void NBT::print(unsigned long depth) {
     if (name.has_value())
         std::cout << " \"" + name.value() + "\"";
 
-    unsigned long subChildrenCount = std::max(listChildren.size(), compoundElements.size());
-    if (subChildrenCount > 0) {
+    if (tagID == TAG_List || tagID == TAG_Compound) {
+        unsigned long subChildrenCount = std::max(listChildren.size(), compoundElements.size());
+
         std::cout << " [" + std::to_string(subChildrenCount) + "]" + " {";
         std::cout << std::endl;
+
         for (NBT child: listChildren) {
             child.print(depth + 1);
         }
+
         for (std::pair<std::string, NBT> element: compoundElements) {
             element.second.print(depth + 1);
         }
