@@ -560,7 +560,7 @@ void NBT::print(unsigned long depth) {
                 break;
             }
             case TAG_String: {
-                std::cout << getString();
+                std::cout << '"' << getString() << '"';
                 break;
             }
             case TAG_Int_Array: {
